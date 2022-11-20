@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <fstream>
 
 #include "linux_parser.h"
 
@@ -10,6 +11,9 @@ using std::stof;
 using std::string;
 using std::to_string;
 using std::vector;
+
+#define DEBUG 0
+
 
 // DONE: An example of how to read data from the filesystem
 string LinuxParser::OperatingSystem() {
@@ -47,6 +51,32 @@ string LinuxParser::Kernel() {
   return kernel;
 }
 
+// TODO: Read and return the system memory utilization
+float LinuxParser::MemoryUtilization() { 
+  string token, str, MemTotal_str = "0", MemFree_str = "0";
+  string line;
+  std::ifstream stream(kProcDirectory + kMeminfoFilename);
+  if (stream.is_open()) {
+    while(std::getline(stream, line)) {
+      std::istringstream linestream(line);
+      linestream >> token >> str;
+      if (token == "MemTotal:") MemTotal_str = str;
+      if (token == "MemFree:") MemFree_str = str;
+    }
+  }
+
+  #ifdef DEBUG
+  std::ofstream MyFile("DEBUG.txt");
+  MyFile << std::stof(MemTotal_str) << "\n"; 
+  MyFile << std::stof(MemFree_str) << "\n";
+  MyFile << 100 * (std::stof(MemTotal_str) - std::stof(MemFree_str)) / std::stof(MemTotal_str) << "\n";
+  MyFile.close(); 
+  #endif
+  
+  // MemoryUtilization = (MemTotal - MemFree) / MemTotal 
+  return (std::stof(MemTotal_str) - std::stof(MemFree_str)) / std::stof(MemTotal_str);
+}
+
 // BONUS: Update this to use std::filesystem
 vector<int> LinuxParser::Pids() {
   vector<int> pids;
@@ -66,9 +96,6 @@ vector<int> LinuxParser::Pids() {
   closedir(directory);
   return pids;
 }
-
-// TODO: Read and return the system memory utilization
-float LinuxParser::MemoryUtilization() { return 0.0; }
 
 // TODO: Read and return the system uptime
 long LinuxParser::UpTime() { return 0; }
