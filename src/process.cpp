@@ -27,7 +27,7 @@ string Process::Ram() { return string(); }
 string Process::User() { return LinuxParser::User(Pid()); }
 
 // TODO: Return the age of this process (in seconds)
-long int Process::UpTime() { return LinuxParser::UpTime(Pid()); }
+long int Process::UpTime() { return LinuxParser::UpTime() - LinuxParser::UpTime(Pid()); } // Time system started (running)- time process started (stopped).
 
 // TODO: Overload the "less than" comparison operator for Process objects
 // REMOVE: [[maybe_unused]] once you define the function

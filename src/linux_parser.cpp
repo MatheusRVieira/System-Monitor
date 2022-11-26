@@ -128,25 +128,23 @@ long LinuxParser::UpTime() {
 }
 
 // TODO: Read and return the uptime of a process
-// REMOVE: [[maybe_unused]] once you define the function
-long LinuxParser::UpTime(int pid[[maybe_unused]]) {  
-  int uptime_clk;
+long LinuxParser::UpTime(int pid) {  
+  string uptime_clk;
   long uptime_sec;
   string line;
   std::ifstream stream(kProcDirectory + to_string(pid) + kStatFilename);
   if(stream.is_open()){
     std::getline(stream,line);
     std::istringstream linestream(line);
-    int iter = 1;
-    while(iter <= 21){
+    for (int i = 0; i < 22; i++)
       linestream >> uptime_clk;
-      iter++;
-    }
-    uptime_sec = uptime_clk / sysconf(_SC_CLK_TCK);
+    
+    uptime_sec = stol(uptime_clk) / sysconf(_SC_CLK_TCK); // The time the process started after system boot.
   }
 
-  #ifdef DEBUG
-  std::ofstream MyFile("DEBUG.txt");
+  #ifdef DEBUGG
+  std::ofstream MyFile("DEBUG.txt", std::ios::app);
+  MyFile << uptime_sec << "\n"; 
   MyFile << uptime_clk << "\n"; 
   MyFile << uptime_sec << "\n"; 
   MyFile.close(); 
@@ -206,21 +204,19 @@ string LinuxParser::Uid(int pid) {
 
   string token, uid_str;
   string line;
-  std::ifstream stream(kProcDirectory + std::to_string(pid) + kStatFilename);  
+  std::ifstream stream(kProcDirectory + std::to_string(pid) + kStatusFilename);  
+  
   if(stream.is_open()){
+
     while(std::getline(stream, line)) {
       std::istringstream linestream(line);
       linestream >> token >> uid_str;
-      if(token == "Uid:") break;
+      if(token == "Uid:"){
+        return uid_str; 
+        break;
+      }
     }
   }
-
-    #ifdef DEBUG
-  std::ofstream MyFile("DEBUG.txt");
-  MyFile << "pid: " << pid << "\n"; 
-  MyFile << "uid: " << uid_str << "\n"; 
-  MyFile.close(); 
-  #endif
 
   return uid_str; 
 
@@ -230,17 +226,28 @@ string LinuxParser::Uid(int pid) {
 // REMOVE: [[maybe_unused]] once you define the function
 string LinuxParser::User(int pid) {
   string line;
+  string Uid_func = LinuxParser::Uid(pid);
+
   string username, x, uid;
   std::ifstream filestream(kPasswordPath);
   if (filestream.is_open()) {
-    while (std::getline(filestream, line, ':')) {
+    while (std::getline(filestream, line)) {
+      std::replace(line.begin(), line.end(), ':', ' ');
       std::istringstream linestream(line);
-      while (linestream >> username >> x >> uid) {
-        if (x == "x" && uid == Uid(pid)) {
-          return username;
-        }
+      linestream >> username >> x >> uid;
+
+      if (x == "x" && uid == Uid_func)
+        return username;    
       }
     }
-  }
+
+  #ifdef DEBUGG
+  std::ofstream MyFile("DEBUG.txt");
+  MyFile << "pid: " << pid << "\n"; 
+  MyFile << "uid: " << uid << "\n"; 
+  MyFile << "user: " << username << "\n"; 
+  MyFile.close(); 
+  #endif
+
   return username;
 }
