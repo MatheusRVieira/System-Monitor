@@ -192,7 +192,24 @@ vector<string> LinuxParser::CpuUtilization() { return {}; }
 
 // TODO: Read and return the command associated with a process
 // REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Command(int pid[[maybe_unused]]) { return string(); }
+string LinuxParser::Command(int pid) {
+  string comm_str;
+  string line;
+  std::ifstream stream(kProcDirectory + to_string(pid) + kCmdlineFilename);
+  if(stream.is_open()){
+    std::getline(stream,line);
+    std::replace(line.begin(), line.end(),'\0',' '); //Command line with /0 throught the line
+  }
+
+  #ifdef DEBUG
+  std::ofstream MyFile("DEBUG.txt", std::ios::app);
+  MyFile << line << "\n"; 
+  MyFile.close(); 
+  #endif
+
+  return line;
+  
+ }
 
 // TODO: Read and return the memory used by a process
 // REMOVE: [[maybe_unused]] once you define the function
@@ -213,7 +230,7 @@ string LinuxParser::Uid(int pid) {
       linestream >> token >> uid_str;
       if(token == "Uid:"){
         return uid_str; 
-        break;
+        break; 
       }
     }
   }
