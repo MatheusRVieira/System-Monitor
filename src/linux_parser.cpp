@@ -12,9 +12,6 @@ using std::string;
 using std::to_string;
 using std::vector;
 
-#define DEBUG 0
-
-
 // DONE: An example of how to read data from the filesystem
 string LinuxParser::OperatingSystem() {
   string line;
@@ -175,23 +172,68 @@ vector<int> LinuxParser::Pids() {
 }
 
 // TODO: Read and return the number of jiffies for the system
-long LinuxParser::Jiffies() { return 0; }
+long LinuxParser::Jiffies() {
+
+  #ifdef DEBUGG
+  std::ofstream MyFile("DEBUG.txt", std::ios::app);
+  MyFile << ActiveJiffies() + IdleJiffies() << "\n"; 
+  MyFile.close(); 
+  #endif
+
+  return ActiveJiffies() + IdleJiffies();
+}
 
 // TODO: Read and return the number of active jiffies for a PID
 // REMOVE: [[maybe_unused]] once you define the function
 long LinuxParser::ActiveJiffies(int pid[[maybe_unused]]) { return 0; }
 
 // TODO: Read and return the number of active jiffies for the system
-long LinuxParser::ActiveJiffies() { return 0; }
+long LinuxParser::ActiveJiffies() {
+  vector<string> CPU_jiffies = CpuUtilization();
+  return stol(CPU_jiffies[CPUStates::kUser_]) +
+         stol(CPU_jiffies[CPUStates::kNice_]) +
+         stol(CPU_jiffies[CPUStates::kSystem_]) +
+         stol(CPU_jiffies[CPUStates::kIRQ_]) +
+         stol(CPU_jiffies[CPUStates::kSoftIRQ_]) +
+         stol(CPU_jiffies[CPUStates::kSteal_]);
+}
 
 // TODO: Read and return the number of idle jiffies for the system
-long LinuxParser::IdleJiffies() { return 0; }
+long LinuxParser::IdleJiffies() {
+  vector<string> CPU_jiffies = CpuUtilization();
+  return stol(CPU_jiffies[CPUStates::kIdle_]) +
+         stol(CPU_jiffies[CPUStates::kIOwait_]);
+}
 
 // TODO: Read and return CPU utilization
-vector<string> LinuxParser::CpuUtilization() { return {}; }
+vector<string> LinuxParser::CpuUtilization() { 
+
+  vector<string> cpu_columns;
+  string token;
+  string line;
+  std::ifstream stream(kProcDirectory + kStatFilename);
+  if (stream.is_open()) 
+  {
+    std::getline(stream, line);
+    std::istringstream linestream(line);
+    linestream >> token; //Get "cpu" token
+    for (int i = 0; i < 10; i++)
+    {
+      linestream >> token;
+      cpu_columns.push_back(token);
+        #ifdef DEBUGG
+        std::ofstream MyFile("DEBUG.txt", std::ios::app);
+        MyFile << token << "\n"; 
+        MyFile.close(); 
+        #endif
+    }
+    
+  }
+
+  return cpu_columns;
+}
 
 // TODO: Read and return the command associated with a process
-// REMOVE: [[maybe_unused]] once you define the function
 string LinuxParser::Command(int pid) {
   string comm_str;
   string line;
@@ -201,7 +243,7 @@ string LinuxParser::Command(int pid) {
     std::replace(line.begin(), line.end(),'\0',' '); //Command line with /0 throught the line
   }
 
-  #ifdef DEBUG
+  #ifdef DEBUGG
   std::ofstream MyFile("DEBUG.txt", std::ios::app);
   MyFile << line << "\n"; 
   MyFile.close(); 
@@ -213,10 +255,37 @@ string LinuxParser::Command(int pid) {
 
 // TODO: Read and return the memory used by a process
 // REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Ram(int pid[[maybe_unused]]) { return string(); }
+string LinuxParser::Ram(int pid) {
+
+  string token;
+  long VmSize_l;
+  string line;
+  std::ifstream stream(kProcDirectory + std::to_string(pid) + kStatusFilename);  
+  if(stream.is_open()){
+  
+    while(std::getline(stream, line)) {
+      std::istringstream linestream(line);
+      linestream >> token >> VmSize_l;
+      if(token == "VmSize:"){
+        VmSize_l /= 1000;
+
+  #ifdef DEBUGG
+  std::ofstream MyFile("DEBUG.txt", std::ios::app);
+  MyFile << pid << "\n"; 
+  MyFile << VmSize_l << "\n"; 
+  MyFile.close(); 
+  #endif
+
+        return to_string(VmSize_l); 
+        break; 
+      }
+    }
+  }
+
+  return to_string(VmSize_l); 
+}
 
 // TODO: Read and return the user ID associated with a process
-// REMOVE: [[maybe_unused]] once you define the function
 string LinuxParser::Uid(int pid) {
 
   string token, uid_str;
