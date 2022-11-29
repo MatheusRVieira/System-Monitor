@@ -5,8 +5,6 @@
 #include <regex>
 #include <string>
 
-#define DEBUG 0
-
 namespace LinuxParser {
 // Paths
 const std::string kProcDirectory{"/proc/"};
