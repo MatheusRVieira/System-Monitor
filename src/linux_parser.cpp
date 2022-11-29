@@ -185,7 +185,24 @@ long LinuxParser::Jiffies() {
 
 // TODO: Read and return the number of active jiffies for a PID
 // REMOVE: [[maybe_unused]] once you define the function
-long LinuxParser::ActiveJiffies(int pid[[maybe_unused]]) { return 0; }
+long LinuxParser::ActiveJiffies(int pid) {
+  long TotalJiffies = 0;
+  string token;
+  string line;
+  std::ifstream stream(kProcDirectory + to_string(pid) + kStatFilename);
+  if(stream.is_open()){
+    std::getline(stream,line);
+    std::istringstream linestream(line);
+    for (int i = 1; i <= 17; i++)
+    {
+      linestream >> token;
+      if(i>=14 && i<=17)                // Including the time for children processes
+        TotalJiffies += stol(token);
+    }
+  }
+
+  return TotalJiffies;
+}
 
 // TODO: Read and return the number of active jiffies for the system
 long LinuxParser::ActiveJiffies() {

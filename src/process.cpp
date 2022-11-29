@@ -15,7 +15,20 @@ using std::vector;
 int Process::Pid() { return pid_; }
 
 // TODO: Return this process's CPU utilization
-float Process::CpuUtilization() { return 0; }
+float Process::CpuUtilization() {
+  long TotalJiffies_sec = long(LinuxParser::ActiveJiffies(Pid())) / sysconf(_SC_CLK_TCK);
+  float cpu_usage = float(TotalJiffies_sec) / float(UpTime());
+
+  #ifdef DEBUGG
+  std::ofstream MyFile("DEBUG.txt", std::ios::app);
+  MyFile << "jiffes_sec: " << float(TotalJiffies_sec) << "\n"; 
+  MyFile << "uptime_sec: " << float(UpTime()) << "\n"; 
+  MyFile << "cpu_usage: " << cpu_usage << "\n"; 
+  MyFile.close(); 
+  #endif
+
+  return cpu_usage;
+ }
 
 // TODO: Return the command that generated this process
 string Process::Command() { return LinuxParser::Command(Pid()); }
@@ -31,4 +44,4 @@ long int Process::UpTime() { return LinuxParser::UpTime() - LinuxParser::UpTime(
 
 // TODO: Overload the "less than" comparison operator for Process objects
 // REMOVE: [[maybe_unused]] once you define the function
-bool Process::operator<(Process const& a[[maybe_unused]]) const { return true; }
+bool Process::operator<(Process & a) { return stol(a.Ram()) < stol(Ram()); } 
